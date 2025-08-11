@@ -5,7 +5,7 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     color = "#2b6cb0"  
-    message = "Hello from my App!"  
+    message = "Hello from my App! 2"  
     return f"""
     <html>
     <head>
