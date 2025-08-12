@@ -25,7 +25,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
-        working-directory: ./infra/live/dev
+        working-directory: ./terraform
         run: terraform init
 
       - name: Terraform Plan (detect drift)
