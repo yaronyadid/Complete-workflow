@@ -33,6 +33,6 @@ jobs:
         run: terraform plan -detailed-exitcode
 
       - name: Terraform Apply (auto-approve)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ./terraform
         run: terraform apply -auto-approve
