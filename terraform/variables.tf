@@ -7,4 +7,5 @@ variable "aws_region" {
 variable "key_name" {
   description = "EC2 Key Pair name"
   type        = string
+  default     = "my keys"
 }
