@@ -126,10 +126,10 @@ resource "aws_instance" "app_server" {
   sudo dnf install -y \
     git \
     unzip \
-    jq
-    iptables \
+    jq \
     dbus-daemon
 
+  sudo dnf install -y iptables-legacy iptables-nft || sudo dnf install -y nftables || echo "Using system default firewall"
   # Enable lingering for ec2-user (allows user services to run without login)
   sudo loginctl enable-linger ec2-user
   # Configure system for rootless Docker
