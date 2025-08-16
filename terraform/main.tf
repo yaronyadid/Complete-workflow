@@ -78,11 +78,10 @@ resource "aws_instance" "app_server" {
     set -ex
 
     # Update system
-    yum update -y
+    dnf update -y
 
     # Install Docker
-    amazon-linux-extras enable docker
-    yum install -y docker
+    dnf install -y docker
 
     # Enable & start Docker
     systemctl enable docker
@@ -96,10 +95,9 @@ resource "aws_instance" "app_server" {
     unzip awscliv2.zip
     ./aws/install
 
-    # Install & enable SSM Agent (for remote commands)
-    yum install -y amazon-ssm-agent
-    systemctl enable amazon-ssm-agent
-    systemctl start amazon-ssm-agent
+   # Install & enable SSM Agent
+   dnf install -y amazon-ssm-agent
+   systemctl enable --now amazon-ssm-agent
 
     # # Optional: ECR login script on startup
     # REGION="eu-west-1"
