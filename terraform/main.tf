@@ -41,6 +41,13 @@ resource "aws_security_group" "allow_ssh_http" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    description = "App port"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     description = "HTTP"
@@ -108,47 +115,82 @@ resource "aws_instance" "app_server" {
     Name = "App-Server"
   }
   user_data = <<-EOF
-    #!/bin/bash
-    set -ex
+  #!/bin/bash
+  set -ex
 
-    # Update system
-    sudo dnf update -y
+  # Update system
+  sudo dnf update -y
 
-    # Install Docker
-    sudo dnf install -y docker
+  # Install required packages for rootless Docker
+  sudo dnf install -y \
+      shadow-utils \
+      fuse-overlayfs \
+      curl \
+      git \
+      systemd \
+      dbus \
+      iptables \
+      unzip \
+      jq
 
-    # Enable & start Docker
-    sudo systemctl enable docker
-    sudo systemctl start docker
+  # Enable lingering for ec2-user (allows user services to run without login)
+  sudo loginctl enable-linger ec2-user
 
-    # Allow ec2-user to run Docker
-    sudo usermod -aG docker ec2-user
+  # Install Docker rootless for ec2-user
+  sudo -u ec2-user bash -c '
+      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+      mkdir -p "$XDG_RUNTIME_DIR"
+      
+      # Download and install rootless Docker
+      curl -fsSL https://get.docker.com/rootless | sh
+      
+      # Add Docker paths to bashrc
+      echo "export PATH=\$HOME/bin:\$PATH" >> ~/.bashrc
+      echo "export DOCKER_HOST=unix://\$XDG_RUNTIME_DIR/docker.sock" >> ~/.bashrc
+      
+      # Create systemd user directory
+      mkdir -p ~/.config/systemd/user
+      
+      # Install Docker service for user
+      ~/bin/dockerd-rootless-setuptool.sh install
+  '
 
-    # Install AWS CLI v2
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    unzip awscliv2.zip
-    ./aws/install
+  # Install AWS CLI v2
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  sudo ./aws/install
+  rm -rf awscliv2.zip aws/
 
-   # Install & enable SSM Agent
-   sudo dnf install -y amazon-ssm-agent
-   sudo systemctl enable --now amazon-ssm-agent
+  # Install & enable SSM Agent
+  sudo dnf install -y amazon-ssm-agent
+  sudo systemctl enable --now amazon-ssm-agent
 
-    # # Optional: ECR login script on startup
-    # REGION="eu-west-1"
-    # ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
-    aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com
+  # Wait for Docker to initialize
+  sleep 10
+
+  # Start Docker service for ec2-user and configure ECR login
+  sudo -u ec2-user bash -c '
+      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+      export PATH="$HOME/bin:$PATH"
+      export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+      
+      # Start Docker daemon
+      systemctl --user start docker
+      systemctl --user enable docker
+      
+      # Wait for Docker to be ready
+      for i in {1..30}; do
+          if docker version >/dev/null 2>&1; then
+              echo "Docker is ready"
+              break
+          fi
+          echo "Waiting for Docker to start... ($i/30)"
+          sleep 2
+      done
+      
+      # ECR login
+      aws ecr get-login-password --region '${var.aws_region}' | docker login --username AWS --password-stdin '${var.aws_account_id}'.dkr.ecr.'${var.aws_region}'.amazonaws.com
+  '
+  echo "Rootless Docker setup completed successfully!"
   EOF
 }
-
-
-# resource "aws_ssm_parameter" "ec2_instance_id" {
-#   name  = "/myapp/ec2_instance_id"
-#   type  = "String"
-#   value = aws_instance.myapp.id
-# }
-
-# resource "aws_ssm_parameter" "ec2_hostname" {
-#   name  = "/myapp/ec2_hostname"
-#   type  = "String"
-#   value = aws_instance.myapp.public_dns
-# }

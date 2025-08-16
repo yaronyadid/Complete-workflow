@@ -64,11 +64,19 @@ jobs:
       - name: Push Docker image to ECR
         run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}
       
+      # - name: Deploy new image on EC2 via SSM
+      #   run: |
+      #     aws ssm send-command \
+      #       --targets "Key=tag:Name,Values=App-Server" \
+      #       --document-name "AWS-RunShellScript" \
+      #       --comment "Deploy latest Flask app container" \
+      #       --parameters 'commands=["docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}","docker stop myapp || true","docker rm myapp || true","docker run -d --name myapp -p 8080:8080 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}"]' \
+      #       --region eu-west-1
       - name: Deploy new image on EC2 via SSM
         run: |
           aws ssm send-command \
             --targets "Key=tag:Name,Values=App-Server" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy latest Flask app container" \
-            --parameters 'commands=["docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}","docker stop myapp || true","docker rm myapp || true","docker run -d --name myapp -p 8080:8080 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}"]' \
+            --parameters 'commands=["sudo -u ec2-user bash -c \"export XDG_RUNTIME_DIR=/run/user/$(id -u ec2-user) && export PATH=/home/ec2-user/bin:$PATH && export DOCKER_HOST=unix:///run/user/$(id -u ec2-user)/docker.sock && aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com && docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }} && docker stop myapp || true && docker rm myapp || true && docker run -d --name myapp --user 1000:1000 -p 8080:8080 ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-flask-app:${{ github.sha }}\""]' \
             --region eu-west-1
