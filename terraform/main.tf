@@ -124,7 +124,6 @@ resource "aws_instance" "app_server" {
 
   # Install required packages for rootless Docker  
   sudo dnf install -y \
-    curl \
     git \
     unzip \
     jq
