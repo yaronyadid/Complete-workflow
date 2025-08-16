@@ -58,6 +58,38 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 
+
+# IAM Role for EC2 to access ECR
+resource "aws_iam_role" "ec2_ecr_role" {
+  name = "ec2-ecr-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# Attach Amazon ECR read-only policy to the role
+resource "aws_iam_role_policy_attachment" "ec2_ecr_attach" {
+  role       = aws_iam_role.ec2_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# Instance Profile for EC2
+resource "aws_iam_instance_profile" "ec2_ecr_profile" {
+  name = "ec2-ecr-profile"
+  role = aws_iam_role.ec2_ecr_role.name
+}
+
+
 # EC2 Instance
 resource "aws_instance" "app_server" {
   ami           = "ami-01776cde0c6f0677c"
@@ -65,6 +97,8 @@ resource "aws_instance" "app_server" {
   key_name      = var.key_name
   subnet_id     = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+
+  iam_instance_profile = aws_iam_instance_profile.ec2_ecr_profile.name
 
   root_block_device {
     delete_on_termination = true
@@ -78,17 +112,17 @@ resource "aws_instance" "app_server" {
     set -ex
 
     # Update system
-    dnf update -y
+    sudo dnf update -y
 
     # Install Docker
-    dnf install -y docker
+    sudo dnf install -y docker
 
     # Enable & start Docker
-    systemctl enable docker
-    systemctl start docker
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
     # Allow ec2-user to run Docker
-    usermod -aG docker ec2-user
+    sudo usermod -aG docker ec2-user
 
     # Install AWS CLI v2
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -96,8 +130,8 @@ resource "aws_instance" "app_server" {
     ./aws/install
 
    # Install & enable SSM Agent
-   dnf install -y amazon-ssm-agent
-   systemctl enable --now amazon-ssm-agent
+   sudo dnf install -y amazon-ssm-agent
+   sudo systemctl enable --now amazon-ssm-agent
 
     # # Optional: ECR login script on startup
     # REGION="eu-west-1"
