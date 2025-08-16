@@ -118,8 +118,8 @@ resource "aws_instance" "app_server" {
   user_data = <<-EOF
   #!/bin/bash
   set -ex
-
-  # Update system
+  
+  # Update the system
   sudo dnf update -y
 
   # Install required packages for rootless Docker
