@@ -19,7 +19,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
-  
+      TF_LOG: DEBUG
+      TF_LOG_PATH: ./terraform.log  
 
     steps:
       - name: Checkout repo
@@ -32,17 +33,20 @@ jobs:
         working-directory: ./terraform
         run: terraform init
 
-      - name: Terraform Plan (detect drift)
-        working-directory: ./terraform
-        run: terraform plan -detailed-exitcode
+      # - name: Terraform Plan (detect drift)
+      #   working-directory: ./terraform
+      #   run: terraform plan -detailed-exitcode
 
-      - name: Terraform Apply (auto-approve)
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        working-directory: ./terraform
-        env:
-          TF_LOG: DEBUG
-          TF_LOG_PATH: ./terraform.log
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: terraform apply -auto-approve -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}"
+      # - name: Terraform Apply (auto-approve)
+      #   if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      #   working-directory: ./terraform
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_REGION: ${{ secrets.AWS_REGION }}
+      #   run: terraform apply -auto-approve -input=false -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}"
+      - name: Terraform Plan
+        run: terraform plan -detailed-exitcode -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}" -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}" -input=false
