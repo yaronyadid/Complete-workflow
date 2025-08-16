@@ -122,17 +122,12 @@ resource "aws_instance" "app_server" {
   # Update the system
   sudo dnf update -y
 
-  # Install required packages for rootless Docker
+  # Install required packages for rootless Docker  
   sudo dnf install -y \
-      shadow-utils \
-      fuse-overlayfs \
-      curl \
-      git \
-      systemd \
-      dbus \
-      iptables \
-      unzip \
-      jq
+    curl \
+    git \
+    unzip \
+    jq
 
   # Enable lingering for ec2-user (allows user services to run without login)
   sudo loginctl enable-linger ec2-user
