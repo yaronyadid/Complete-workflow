@@ -101,9 +101,9 @@ resource "aws_instance" "app_server" {
     systemctl enable amazon-ssm-agent
     systemctl start amazon-ssm-agent
 
-    # Optional: ECR login script on startup
-    REGION="eu-west-1"
-    ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
+    # # Optional: ECR login script on startup
+    # REGION="eu-west-1"
+    # ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
     aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com
   EOF
 }
