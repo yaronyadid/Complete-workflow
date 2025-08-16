@@ -127,9 +127,16 @@ resource "aws_instance" "app_server" {
     git \
     unzip \
     jq
+    iptables \
+    dbus-daemon
 
   # Enable lingering for ec2-user (allows user services to run without login)
   sudo loginctl enable-linger ec2-user
+  # Configure system for rootless Docker
+  echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+  echo 'user.max_user_namespaces=28633' | sudo tee -a /etc/sysctl.conf
+  echo 'net.ipv4.ping_group_range = 0 2147483647' | sudo tee -a /etc/sysctl.conf
+  sudo sysctl --system
 
   # Install Docker rootless for ec2-user
   sudo -u ec2-user bash -c '
