@@ -35,4 +35,4 @@ jobs:
       - name: Terraform Apply (auto-approve)
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         working-directory: ./terraform
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}"

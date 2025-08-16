@@ -104,7 +104,7 @@ resource "aws_instance" "app_server" {
     # Optional: ECR login script on startup
     REGION="eu-west-1"
     ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
-    aws ecr get-login-password --region \$REGION | docker login --username AWS --password-stdin \${ACCOUNT_ID}.dkr.ecr.\${REGION}.amazonaws.com
+    aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com
   EOF
 }
 

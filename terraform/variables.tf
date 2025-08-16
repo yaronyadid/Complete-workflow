@@ -9,3 +9,8 @@ variable "key_name" {
   type        = string
   default     = "my keys"
 }
+
+variable "aws_account_id" {
+  description = "AWS Account ID to login to ECR"
+  type        = string
+}
