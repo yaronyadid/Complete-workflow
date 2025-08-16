@@ -73,4 +73,50 @@ resource "aws_instance" "app_server" {
   tags = {
     Name = "App-Server"
   }
+  user_data = <<-EOF
+    #!/bin/bash
+    set -ex
+
+    # Update system
+    yum update -y
+
+    # Install Docker
+    amazon-linux-extras enable docker
+    yum install -y docker
+
+    # Enable & start Docker
+    systemctl enable docker
+    systemctl start docker
+
+    # Allow ec2-user to run Docker
+    usermod -aG docker ec2-user
+
+    # Install AWS CLI v2
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    ./aws/install
+
+    # Install & enable SSM Agent (for remote commands)
+    yum install -y amazon-ssm-agent
+    systemctl enable amazon-ssm-agent
+    systemctl start amazon-ssm-agent
+
+    # Optional: ECR login script on startup
+    REGION="eu-west-1"
+    ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)
+    aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com
+  EOF
 }
+
+
+# resource "aws_ssm_parameter" "ec2_instance_id" {
+#   name  = "/myapp/ec2_instance_id"
+#   type  = "String"
+#   value = aws_instance.myapp.id
+# }
+
+# resource "aws_ssm_parameter" "ec2_hostname" {
+#   name  = "/myapp/ec2_hostname"
+#   type  = "String"
+#   value = aws_instance.myapp.public_dns
+# }

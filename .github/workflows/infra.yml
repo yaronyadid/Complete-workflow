@@ -1,11 +1,11 @@
 name: Infra CI
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'terraform/**'
+  # push:
+  #   branches:
+  #     - master
+  #   paths:
+  #     - 'terraform/**'
   workflow_dispatch:    
 
 jobs:
