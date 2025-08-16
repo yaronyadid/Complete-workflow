@@ -42,4 +42,7 @@ jobs:
         env:
           TF_LOG: DEBUG
           TF_LOG_PATH: ./terraform.log
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: terraform apply -auto-approve -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}"
