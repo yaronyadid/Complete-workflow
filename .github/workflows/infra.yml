@@ -51,5 +51,5 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./terraform
-        #terraform taint aws_instance.app_server || true , add this if you want to force recreate the instance
+        #terraform taint aws_instance.app_server || true , add this if you want to force recreate the instance 
         run: terraform apply -auto-approve -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}" -input=false
