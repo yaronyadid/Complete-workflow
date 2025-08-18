@@ -67,7 +67,7 @@ resource "aws_security_group" "allow_ssh_http" {
 
 
 # IAM Role for EC2 to access ECR
-resource "aws_iam_role" "ec2_ecr_role" {
+resource "aws_iam_role" "ec2_role" {
   name = "ec2-ecr-role"
 
   assume_role_policy = jsonencode({
@@ -86,14 +86,41 @@ resource "aws_iam_role" "ec2_ecr_role" {
 
 # Attach Amazon ECR read-only policy to the role
 resource "aws_iam_role_policy_attachment" "ec2_ecr_attach" {
-  role       = aws_iam_role.ec2_ecr_role.name
+  role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# Attach AmazonSSMManagedInstanceCore (best practice for SSM Agent)
+resource "aws_iam_role_policy_attachment" "ssm_managed_core" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# OPTIONAL: extra inline policy if you need SendCommand from outside (GitHub Actions)
+resource "aws_iam_role_policy" "ssm_extra" {
+  name = "ec2-ssm-extra"
+  role = aws_iam_role.ec2_role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand",
+          "ssm:ListCommandInvocations",
+          "ssm:ListCommands"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 # Instance Profile for EC2
 resource "aws_iam_instance_profile" "ec2_ecr_profile" {
   name = "ec2-ecr-profile"
-  role = aws_iam_role.ec2_ecr_role.name
+  role = aws_iam_role.ec2_role.name
 }
 
 
