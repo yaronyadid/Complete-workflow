@@ -29,22 +29,21 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive terraform/
+        continue-on-error: true
+
       - name: Terraform Init
         working-directory: ./terraform
         run: terraform init
 
-      # - name: Terraform Plan (detect drift)
-      #   working-directory: ./terraform
-      #   run: terraform plan -detailed-exitcode
+      - name: Terraform Validate
+        id: validate
+        run: |
+          cd ./terraform
+          terraform validate
 
-      # - name: Terraform Apply (auto-approve)
-      #   if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      #   working-directory: ./terraform
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_REGION: ${{ secrets.AWS_REGION }}
-      #   run: terraform apply -auto-approve -input=false -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}"
       - name: Terraform Plan
         working-directory: ./terraform
         run: terraform plan -detailed-exitcode -var "aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" -var "aws_region=${{ secrets.AWS_REGION }}" -input=false

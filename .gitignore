@@ -1,6 +1,8 @@
 # Ignore Terraform state files
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
 
 # Ignore Terraform plugin and module cache
 .terraform/
