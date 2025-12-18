@@ -192,7 +192,6 @@ resource "aws_instance" "app_server" {
   $HOME/bin/dockerd-rootless-setuptool.sh install
   
   echo "Docker rootless installation finished. Please log out and log back in to use Docker."
-  EOF
 
 
   # Install AWS CLI v2
