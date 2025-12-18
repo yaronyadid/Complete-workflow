@@ -74,8 +74,8 @@ resource "aws_iam_role" "ec2_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -126,10 +126,10 @@ resource "aws_iam_instance_profile" "ec2_ecr_profile" {
 
 # EC2 Instance
 resource "aws_instance" "app_server" {
-  ami           = "ami-01776cde0c6f0677c"
-  instance_type = "t2.micro"
-  key_name      = var.key_name
-  subnet_id     = aws_subnet.public_subnet.id
+  ami                    = "ami-01776cde0c6f0677c"
+  instance_type          = "t2.micro"
+  key_name               = var.key_name
+  subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
 
   iam_instance_profile = aws_iam_instance_profile.ec2_ecr_profile.name
