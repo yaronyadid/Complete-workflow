@@ -166,17 +166,20 @@ resource "aws_instance" "app_server" {
   sudo sysctl --system
 
   # Install Docker rootless for ec2-user
-  sudo -u ec2-user bash -c '
-      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-      mkdir -p "$XDG_RUNTIME_DIR"
+  sudo -u -i ec2-user bash -c '
+     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+     mkdir -p "$XDG_RUNTIME_DIR"
+     export PATH="$HOME/bin:$PATH"
+     export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
       
       # Download and install rootless Docker
       curl -fsSL https://get.docker.com/rootless | sh
       
       # Add Docker paths to bashrc
-      echo "export PATH=\$HOME/bin:\$PATH" >> ~/.bashrc
-      echo "export DOCKER_HOST=unix://\$XDG_RUNTIME_DIR/docker.sock" >> ~/.bashrc
-      
+      echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+      echo 'export XDG_RUNTIME_DIR=/run/user/$(id -u)' >> ~/.bashrc
+      echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> ~/.bashrc
+      source ~/.bashrc
       # Create systemd user directory
       mkdir -p ~/.config/systemd/user
       
