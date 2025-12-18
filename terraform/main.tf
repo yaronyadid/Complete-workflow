@@ -166,7 +166,7 @@ resource "aws_instance" "app_server" {
   sudo sysctl --system
 
   # Install Docker rootless for ec2-user
-  sudo -u -i ec2-user bash -c '
+  sudo -i -u ec2-user bash -c '
       export XDG_RUNTIME_DIR="/run/user/$(id -u)"
       mkdir -p "$XDG_RUNTIME_DIR"
       export PATH="$HOME/bin:$PATH"
