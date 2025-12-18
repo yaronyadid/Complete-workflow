@@ -167,10 +167,10 @@ resource "aws_instance" "app_server" {
 
   # Install Docker rootless for ec2-user
   sudo -u -i ec2-user bash -c '
-     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-     mkdir -p "$XDG_RUNTIME_DIR"
-     export PATH="$HOME/bin:$PATH"
-     export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+      mkdir -p "$XDG_RUNTIME_DIR"
+      export PATH="$HOME/bin:$PATH"
+      export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
       
       # Download and install rootless Docker
       curl -fsSL https://get.docker.com/rootless | sh
