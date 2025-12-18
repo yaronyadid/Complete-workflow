@@ -165,27 +165,35 @@ resource "aws_instance" "app_server" {
   echo 'net.ipv4.ping_group_range = 0 2147483647' | sudo tee -a /etc/sysctl.conf
   sudo sysctl --system
 
-  # Install Docker rootless for ec2-user
-  sudo -i -u ec2-user bash -c '
-      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-      mkdir -p "$XDG_RUNTIME_DIR"
-      export PATH="$HOME/bin:$PATH"
-      export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
-      
-      # Download and install rootless Docker
-      curl -fsSL https://get.docker.com/rootless | sh
-      
-      # Add Docker paths to bashrc
-      echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
-      echo 'export XDG_RUNTIME_DIR=/run/user/$(id -u)' >> ~/.bashrc
-      echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> ~/.bashrc
-      source ~/.bashrc
-      # Create systemd user directory
-      mkdir -p ~/.config/systemd/user
-      
-      # Install Docker service for user
-      ~/bin/dockerd-rootless-setuptool.sh install
-  '
+
+
+
+  sudo -i -u ec2-user bash <<'EOF'
+  # Ensure XDG_RUNTIME_DIR exists
+  export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+  mkdir -p "$XDG_RUNTIME_DIR"
+  chmod 700 "$XDG_RUNTIME_DIR"
+  
+  # Add Docker environment variables to .bashrc if not already present
+  grep -qxF 'export PATH=$HOME/bin:$PATH' ~/.bashrc || echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+  grep -qxF 'export XDG_RUNTIME_DIR=/run/user/$(id -u)' ~/.bashrc || echo 'export XDG_RUNTIME_DIR=/run/user/$(id -u)' >> ~/.bashrc
+  grep -qxF 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' ~/.bashrc || echo 'export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/docker.sock' >> ~/.bashrc
+  
+  export PATH="$HOME/bin:$PATH"
+  export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+  
+  # Install rootless Docker
+  curl -fsSL https://get.docker.com/rootless | sh
+  
+  # Create systemd user directory
+  mkdir -p ~/.config/systemd/user
+  
+  # Install Docker rootless service
+  $HOME/bin/dockerd-rootless-setuptool.sh install
+  
+  echo "Docker rootless installation finished. Please log out and log back in to use Docker."
+  EOF
+
 
   # Install AWS CLI v2
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -202,13 +210,14 @@ resource "aws_instance" "app_server" {
 
   # Start Docker service for ec2-user and configure ECR login
   sudo -u ec2-user bash -c '
-      export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-      export PATH="$HOME/bin:$PATH"
-      export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
+     # export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+     # export PATH="$HOME/bin:$PATH"
+     # export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/docker.sock"
       
       # Start Docker daemon
       systemctl --user start docker
       systemctl --user enable docker
+      docker info
       
       # Wait for Docker to be ready
       for i in {1..30}; do
